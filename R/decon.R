@@ -89,7 +89,7 @@ bg.calcLL = function(counts, global.z, cb.z, phi, eta,theta){
 #  phi Numeric matrix. Rows represent features and columns represent cell populations
 #  eta Numeric matrix. Rows represent features and columns represent cell populations
 #  theta Numeric vector. Proportion of truely expressed transctripts
-cD.calcEMDecontamination = function(counts, phi, eta, theta,  z, K, beta, delta ) {
+cD.calcEMDecontamination = function(counts, phi, eta, theta,  z, K, beta, delta, vctr.idf) {
 
     ## Notes: use fix-point iteration to update prior for theta, no need to feed delta anymore
     log.Pr = log(  t(phi)[z,] + 1e-20) + log(theta + 1e-20 )
@@ -107,6 +107,12 @@ cD.calcEMDecontamination = function(counts, phi, eta, theta,  z, K, beta, delta 
     theta = (colSums(est.rmat) + delta.v2[1]) / (colSums(counts) + sum(delta.v2)  )  
     phi  = normalizeCounts(rn.G.by.K, normalize="proportion",  pseudocount.normalize =beta ) 
     eta  = normalizeCounts(cn.G.by.K, normalize="proportion",  pseudocount.normalize = beta) 
+
+    # tf-idf weighted eta
+    for (k in 1:K) {
+        eta[,k] = eta[,k] %*% diag(vctr.idf[,k])
+        eta[,k] = eta[,k] / sum(eta[,k])  # L1 normalization
+    }
 
     return( list("est.rmat"=est.rmat,  "theta"=theta, "phi"=phi, "eta"=eta, "delta"=delta.v2 ) ) 
 }
@@ -244,7 +250,19 @@ DecontXoneBatch = function(counts, z=NULL, batch=NULL, max.iter=200, beta=1e-6, 
         phi = normalizeCounts(phi, normalize="proportion", pseudocount.normalize =beta )
         eta = normalizeCounts(eta, normalize="proportion", pseudocount.normalize = beta)
         ll = c()
-  
+
+         # tf-idf
+        vctr.idf = matrix(NA, ncol=K, nrow=nG)
+        for (k in 1:K) {
+            # what if there is only one cell in cluster k, might be a bug here
+            vctr.idf[,k] = log10( (sum( z==k ) + 1) / apply(counts[,z==k], 1, FUN=function(v) {return(sum(v>0)+1)}) ) + 1
+        }
+        # then during the iteration: matrix-rize each vector from this matrix and right multiply with the eta, L1 normalize the result as the new weighted eta. The calculation of log-likelihood should also use tf-idf weighted eta.
+        for( k in 1:K) {
+            # tf.idf weighted eta
+            eta[,k] = eta[,k] %*% diag(vctr.idf[,k])  # tf.idf weight to adjust eta
+            eta[,k] = eta[,k] / sum(eta[,k])  # L1 normalization
+        }
 
         ll.round =  decon.calcLL(counts=counts, z=z, phi = phi, eta = eta, theta=theta ) 
 
@@ -252,7 +270,7 @@ DecontXoneBatch = function(counts, z=NULL, batch=NULL, max.iter=200, beta=1e-6, 
         ## EM updates
         while (iter <=  max.iter &  num.iter.without.improvement <= stop.iter  ) {
 
-            next.decon = cD.calcEMDecontamination(counts=counts, phi=phi, eta=eta, theta=theta, z=z, K=K,  beta=beta, delta=delta) 
+            next.decon = cD.calcEMDecontamination(counts=counts, phi=phi, eta=eta, theta=theta, z=z, K=K,  beta=beta, delta=delta, vctr.idf=vctr.idf) 
 
             theta = next.decon$theta 
             phi = next.decon$phi
@@ -296,7 +314,7 @@ DecontXoneBatch = function(counts, z=NULL, batch=NULL, max.iter=200, beta=1e-6, 
         eta = normalizeCounts( eta, normalize="proportion", pseudocount.normalize = beta) 
         ll =c()
 
-        #tf-idf
+        # tf-idf
         K = length(unique(global.z)) 
         vctr.idf = matrix(NA, ncol=K, nrow=nG)
         for (k in 1:K) {
