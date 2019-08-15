@@ -136,9 +136,10 @@ BEGIN_RCPP
 END_RCPP
 }
 // celdaC_EMUpdate
-void celdaC_EMUpdate(const IntegerMatrix& counts, IntegerMatrix& mCPByS, IntegerMatrix& nGByCP, const IntegerVector& nByC, IntegerVector& nCP, IntegerVector& z, const IntegerVector& s, const int& K, const int& nG, const int& nM, const double& alpha, const double& beta, bool doSample);
+NumericMatrix celdaC_EMUpdate(const IntegerMatrix& counts, IntegerMatrix& mCPByS, IntegerMatrix& nGByCP, const IntegerVector& nByC, IntegerVector& nCP, IntegerVector& z, const IntegerVector& s, const int& K, const int& nG, const int& nM, const double& alpha, const double& beta, bool doSample);
 RcppExport SEXP _celda_celdaC_EMUpdate(SEXP countsSEXP, SEXP mCPBySSEXP, SEXP nGByCPSEXP, SEXP nByCSEXP, SEXP nCPSEXP, SEXP zSEXP, SEXP sSEXP, SEXP KSEXP, SEXP nGSEXP, SEXP nMSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP doSampleSEXP) {
 BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const IntegerMatrix& >::type counts(countsSEXP);
     Rcpp::traits::input_parameter< IntegerMatrix& >::type mCPByS(mCPBySSEXP);
@@ -153,8 +154,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double& >::type alpha(alphaSEXP);
     Rcpp::traits::input_parameter< const double& >::type beta(betaSEXP);
     Rcpp::traits::input_parameter< bool >::type doSample(doSampleSEXP);
-    celdaC_EMUpdate(counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta, doSample);
-    return R_NilValue;
+    rcpp_result_gen = Rcpp::wrap(celdaC_EMUpdate(counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta, doSample));
+    return rcpp_result_gen;
 END_RCPP
 }
 // eigenMatMultInt

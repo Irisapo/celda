@@ -26,7 +26,7 @@ celdaC_llh <- function(mCPByS, nGByCP, s, z, K, nS, nG, alpha, beta) {
 }
 
 celdaC_EMUpdate <- function(counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta, doSample = TRUE) {
-    invisible(.Call('_celda_celdaC_EMUpdate', PACKAGE = 'celda', counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta, doSample))
+    .Call('_celda_celdaC_EMUpdate', PACKAGE = 'celda', counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta, doSample)
 }
 
 #' Fast matrix multiplication for double x int

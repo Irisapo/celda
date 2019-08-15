@@ -241,7 +241,7 @@ celda_Ccpp <- function(counts,
         doCellSplit <- TRUE
         while (iter <= maxIter & numIterWithoutImprovement <= stopIter) {
             #nextZ <- do.call(algorithmFun, list(
-            do.call(algorithmFun, list(
+            nextZProbs = do.call(algorithmFun, list(
                 counts = counts,
                 mCPByS = mCPByS,
                 nGByCP = nGByCP,
@@ -286,6 +286,9 @@ celda_Ccpp <- function(counts,
                     sep = "",
                     verbose = verbose)
 
+                if (is.null(nextZProbs)) {  # is Gibbs then calculate nextZProbs, if EM no need to re-calculate  
+                    nextZProbs = cC_calProbT(counts, mCPByS, nGByCP,  nByC,nCP, z, s,  K,  nG,  nM,alpha,  beta)
+                }
                 res <- .cCSplitZ(
                     counts,
                     mCPByS,
@@ -299,7 +302,7 @@ celda_Ccpp <- function(counts,
                     alpha,
                     beta,
                     #zProb = t(nextZ$probs),
-                    zProb = cC_calProb(counts, mCPByS, nGByCP,  nByC,nCP, z, s,  K,  nG,  nM,alpha,  beta), 
+                    zProb = t(nextZProbs),  
                     maxClustersToTry = K,
                     minCell = 3)
 

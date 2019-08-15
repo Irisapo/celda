@@ -171,8 +171,8 @@ NumericMatrix fastMultMat(const NumericMatrix & phi, const IntegerMatrix & count
     return wrap(Probs); 
 }
 
-IntegerVector updateZ_EM(const IntegerMatrix & counts, const IntegerMatrix & mCPByS, const IntegerMatrix & nGByCP, 
-                         const IntegerVector & s, const int& nM, const double& alpha, const double& beta) { 
+NumericMatrix updateZ_EM(const IntegerMatrix & counts, const IntegerMatrix & mCPByS, const IntegerMatrix & nGByCP, 
+                         IntegerVector & z, const IntegerVector & s, const int& nM, const double& alpha, const double& beta) { 
     // calculate theta
     int rowSize = mCPByS.nrow(), colSize = mCPByS.ncol();  
     NumericMatrix theta(rowSize, colSize); 
@@ -204,27 +204,27 @@ IntegerVector updateZ_EM(const IntegerMatrix & counts, const IntegerMatrix & mCP
 
     NumericMatrix probs = fastMultMat(phi, counts); 
 
-    IntegerVector newZ(nM);
     for (int i=0; i<nM; ++i) {
-        newZ[i] = 1 + which_max( probs( _, i) + theta( _, s[i] - 1));  // 1 base k(c-cluster)
+        probs( _, i) = probs( _, i) + theta( _, s[i] - 1); 
+        z[i] = 1 + which_max( probs( _, i) );  // 1 base k(c-cluster)
     }
 
-    return newZ; 
+    return probs; 
 }
 
 // [[Rcpp::export]]
-void celdaC_EMUpdate(const IntegerMatrix & counts, IntegerMatrix & mCPByS, IntegerMatrix & nGByCP, const IntegerVector & nByC, 
+NumericMatrix celdaC_EMUpdate(const IntegerMatrix & counts, IntegerMatrix & mCPByS, IntegerMatrix & nGByCP, const IntegerVector & nByC, 
                     IntegerVector & nCP, IntegerVector & z, const IntegerVector & s, const int& K, const int& nG, const int& nM, 
                     const double& alpha, const double& beta, bool doSample = true) { 
     
+    NumericMatrix probs(K, nM); 
     // update z and others
     if (doSample) {
         IntegerVector previousZ = clone(z); 
-        IntegerVector newZ = updateZ_EM(counts, mCPByS, nGByCP, s, nM, alpha, beta);
+        probs = updateZ_EM(counts, mCPByS, nGByCP, z, s, nM, alpha, beta);
         // update z(in 1 base),  nGByCP, nCP and mCPByS
         for( int i=0; i<nM; ++i) {
-            if (previousZ[i] != newZ[i]) {
-                z[i] = newZ[i];
+            if (previousZ[i] != z[i]) {
                 nGByCP( _, previousZ[i] - 1) = nGByCP( _, previousZ[i] - 1) - counts( _, i);   // 1-base index to 0-base for slicing
                 nGByCP( _, z[i] - 1 ) = nGByCP( _, z[i] -1 ) + counts( _, i);  
                 nCP[previousZ[i] - 1] -= nByC[i];
@@ -233,6 +233,10 @@ void celdaC_EMUpdate(const IntegerMatrix & counts, IntegerMatrix & mCPByS, Integ
                 mCPByS(z[i] - 1, s[i] -1) += 1; 
             }
         }
+        return probs; 
+    } else { // when doSample = false
+        probs = cC_calProbT(counts, mCPByS, nGByCP,  nByC,nCP, z, s,  K,  nG,  nM,alpha,  beta);  
+        return probs;
     }
 }
 
