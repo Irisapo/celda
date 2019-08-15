@@ -94,6 +94,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cC_calProbT
+NumericMatrix cC_calProbT(const IntegerMatrix& counts, const IntegerMatrix& mCPByS, const IntegerMatrix& nGByCP, const IntegerVector& nByC, const IntegerVector& nCP, const IntegerVector& z, const IntegerVector& s, const int& K, const int& nG, const int& nM, const double& alpha, const double& beta);
+RcppExport SEXP _celda_cC_calProbT(SEXP countsSEXP, SEXP mCPBySSEXP, SEXP nGByCPSEXP, SEXP nByCSEXP, SEXP nCPSEXP, SEXP zSEXP, SEXP sSEXP, SEXP KSEXP, SEXP nGSEXP, SEXP nMSEXP, SEXP alphaSEXP, SEXP betaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerMatrix& >::type counts(countsSEXP);
+    Rcpp::traits::input_parameter< const IntegerMatrix& >::type mCPByS(mCPBySSEXP);
+    Rcpp::traits::input_parameter< const IntegerMatrix& >::type nGByCP(nGByCPSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type nByC(nByCSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type nCP(nCPSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type z(zSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type s(sSEXP);
+    Rcpp::traits::input_parameter< const int& >::type K(KSEXP);
+    Rcpp::traits::input_parameter< const int& >::type nG(nGSEXP);
+    Rcpp::traits::input_parameter< const int& >::type nM(nMSEXP);
+    Rcpp::traits::input_parameter< const double& >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const double& >::type beta(betaSEXP);
+    rcpp_result_gen = Rcpp::wrap(cC_calProbT(counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta));
+    return rcpp_result_gen;
+END_RCPP
+}
 // celdaC_llh
 double celdaC_llh(const IntegerMatrix& mCPByS, const IntegerMatrix& nGByCP, const IntegerVector& s, const IntegerVector& z, const int& K, const int& nS, const int& nG, const double& alpha, const double& beta);
 RcppExport SEXP _celda_celdaC_llh(SEXP mCPBySSEXP, SEXP nGByCPSEXP, SEXP sSEXP, SEXP zSEXP, SEXP KSEXP, SEXP nSSEXP, SEXP nGSEXP, SEXP alphaSEXP, SEXP betaSEXP) {
@@ -197,6 +219,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_celda_cG_CalcGibbsProbY", (DL_FUNC) &_celda_cG_CalcGibbsProbY, 13},
     {"_celda_celdaC_GibbsUpdate", (DL_FUNC) &_celda_celdaC_GibbsUpdate, 13},
     {"_celda_cC_calProb", (DL_FUNC) &_celda_cC_calProb, 12},
+    {"_celda_cC_calProbT", (DL_FUNC) &_celda_cC_calProbT, 12},
     {"_celda_celdaC_llh", (DL_FUNC) &_celda_celdaC_llh, 9},
     {"_celda_celdaC_EMUpdate", (DL_FUNC) &_celda_celdaC_EMUpdate, 13},
     {"_celda_eigenMatMultInt", (DL_FUNC) &_celda_eigenMatMultInt, 2},

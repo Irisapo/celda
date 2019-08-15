@@ -90,6 +90,33 @@ NumericMatrix cC_calProb(const IntegerMatrix & counts, const IntegerMatrix & mCP
     return lprobs;
 }
 
+// [[Rcpp::export]]
+NumericMatrix cC_calProbT(const IntegerMatrix & counts, const IntegerMatrix & mCPByS, const IntegerMatrix & nGByCP, const IntegerVector & nByC,
+                         const IntegerVector & nCP, const IntegerVector & z, const IntegerVector & s, const int& K,
+                         const int& nG, const int& nM, const double& alpha, const double& beta) { 
+
+    NumericMatrix lprobs(K, nM); 
+    for (int i=0; i<nM; ++i) { 
+        int k_c = z[i] -1;   // reindex to 0 base
+        int s_c = s[i] -1;  // reindex to 0 base 
+        for(int k=0; k<K; ++k) { 
+            if (k != k_c) { 
+                lprobs(k, i) = log(mCPByS(k, s_c) + alpha);  // Theta simplified
+                lprobs(k, i) += sum(lgamma(nGByCP( _, k) + counts( _, i) + beta)); //
+                lprobs(k, i) -= lgamma(nCP[k] + nByC[i] + nG * beta); //
+                lprobs(k, i) -= sum(lgamma(nGByCP( _, k) + beta)); //
+                lprobs(k, i) += lgamma(nCP[k] + nG * beta); //
+            } else {
+                lprobs(k, i) = log(mCPByS(k, s_c) - 1 + alpha);  // Theta simplified
+                lprobs(k, i) += sum(lgamma(nGByCP( _, k) + beta)); //
+                lprobs(k, i) -= lgamma(nCP[k] + nG * beta); //
+                lprobs(k, i) -= sum(lgamma(nGByCP( _, k) - counts( _, i) + beta)); //
+                lprobs(k, i) += lgamma(nCP[k] - nByC[i] + nG * beta); //           
+            }
+        }
+    }
+    return lprobs;
+}
      
 // This is to replace .cCCalcLL() function
 // [[Rcpp::export]]
