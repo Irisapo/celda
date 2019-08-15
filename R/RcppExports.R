@@ -25,6 +25,10 @@ celdaC_llh <- function(mCPByS, nGByCP, s, z, K, nS, nG, alpha, beta) {
     .Call('_celda_celdaC_llh', PACKAGE = 'celda', mCPByS, nGByCP, s, z, K, nS, nG, alpha, beta)
 }
 
+updateZ_EM <- function(counts, mCPByS, nGByCP, z, s, nM, alpha, beta) {
+    .Call('_celda_updateZ_EM', PACKAGE = 'celda', counts, mCPByS, nGByCP, z, s, nM, alpha, beta)
+}
+
 celdaC_EMUpdate <- function(counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta, doSample = TRUE) {
     .Call('_celda_celdaC_EMUpdate', PACKAGE = 'celda', counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta, doSample)
 }

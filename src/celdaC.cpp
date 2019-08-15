@@ -170,7 +170,7 @@ NumericMatrix fastMultMat(const NumericMatrix & phi, const IntegerMatrix & count
     
     return wrap(Probs); 
 }
-
+// [[Rcpp::export]]
 NumericMatrix updateZ_EM(const IntegerMatrix & counts, const IntegerMatrix & mCPByS, const IntegerMatrix & nGByCP, 
                          IntegerVector & z, const IntegerVector & s, const int& nM, const double& alpha, const double& beta) { 
     // calculate theta

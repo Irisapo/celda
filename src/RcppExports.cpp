@@ -135,6 +135,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// updateZ_EM
+NumericMatrix updateZ_EM(const IntegerMatrix& counts, const IntegerMatrix& mCPByS, const IntegerMatrix& nGByCP, IntegerVector& z, const IntegerVector& s, const int& nM, const double& alpha, const double& beta);
+RcppExport SEXP _celda_updateZ_EM(SEXP countsSEXP, SEXP mCPBySSEXP, SEXP nGByCPSEXP, SEXP zSEXP, SEXP sSEXP, SEXP nMSEXP, SEXP alphaSEXP, SEXP betaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const IntegerMatrix& >::type counts(countsSEXP);
+    Rcpp::traits::input_parameter< const IntegerMatrix& >::type mCPByS(mCPBySSEXP);
+    Rcpp::traits::input_parameter< const IntegerMatrix& >::type nGByCP(nGByCPSEXP);
+    Rcpp::traits::input_parameter< IntegerVector& >::type z(zSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type s(sSEXP);
+    Rcpp::traits::input_parameter< const int& >::type nM(nMSEXP);
+    Rcpp::traits::input_parameter< const double& >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const double& >::type beta(betaSEXP);
+    rcpp_result_gen = Rcpp::wrap(updateZ_EM(counts, mCPByS, nGByCP, z, s, nM, alpha, beta));
+    return rcpp_result_gen;
+END_RCPP
+}
 // celdaC_EMUpdate
 NumericMatrix celdaC_EMUpdate(const IntegerMatrix& counts, IntegerMatrix& mCPByS, IntegerMatrix& nGByCP, const IntegerVector& nByC, IntegerVector& nCP, IntegerVector& z, const IntegerVector& s, const int& K, const int& nG, const int& nM, const double& alpha, const double& beta, bool doSample);
 RcppExport SEXP _celda_celdaC_EMUpdate(SEXP countsSEXP, SEXP mCPBySSEXP, SEXP nGByCPSEXP, SEXP nByCSEXP, SEXP nCPSEXP, SEXP zSEXP, SEXP sSEXP, SEXP KSEXP, SEXP nGSEXP, SEXP nMSEXP, SEXP alphaSEXP, SEXP betaSEXP, SEXP doSampleSEXP) {
@@ -222,6 +240,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_celda_cC_calProb", (DL_FUNC) &_celda_cC_calProb, 12},
     {"_celda_cC_calProbT", (DL_FUNC) &_celda_cC_calProbT, 12},
     {"_celda_celdaC_llh", (DL_FUNC) &_celda_celdaC_llh, 9},
+    {"_celda_updateZ_EM", (DL_FUNC) &_celda_updateZ_EM, 8},
     {"_celda_celdaC_EMUpdate", (DL_FUNC) &_celda_celdaC_EMUpdate, 13},
     {"_celda_eigenMatMultInt", (DL_FUNC) &_celda_eigenMatMultInt, 2},
     {"_celda_fastNormProp", (DL_FUNC) &_celda_fastNormProp, 2},
