@@ -9,6 +9,22 @@ cG_CalcGibbsProbY <- function(index, counts, nTSbyC, nbyTS, nGbyTS, nbyG, y, L, 
     .Call('_celda_cG_CalcGibbsProbY', PACKAGE = 'celda', index, counts, nTSbyC, nbyTS, nGbyTS, nbyG, y, L, nG, lg_beta, lg_gamma, lg_delta, delta)
 }
 
+celdaC_GibbsUpdate <- function(counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta, doSample = TRUE) {
+    invisible(.Call('_celda_celdaC_GibbsUpdate', PACKAGE = 'celda', counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta, doSample))
+}
+
+cC_calProb <- function(counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta) {
+    .Call('_celda_cC_calProb', PACKAGE = 'celda', counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta)
+}
+
+celdaC_llh <- function(mCPByS, nGByCP, s, z, K, nS, nG, alpha, beta) {
+    .Call('_celda_celdaC_llh', PACKAGE = 'celda', mCPByS, nGByCP, s, z, K, nS, nG, alpha, beta)
+}
+
+celdaC_EMUpdate <- function(counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta, doSample = TRUE) {
+    invisible(.Call('_celda_celdaC_EMUpdate', PACKAGE = 'celda', counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta, doSample))
+}
+
 #' Fast matrix multiplication for double x int
 #' 
 #' @param A a double matrix
