@@ -222,15 +222,18 @@ NumericMatrix celdaC_EMUpdate(const IntegerMatrix & counts, IntegerMatrix & mCPB
     if (doSample) {
         IntegerVector previousZ = clone(z); 
         probs = updateZ_EM(counts, mCPByS, nGByCP, z, s, nM, alpha, beta);
+        int pz_i = 0, z_i = 0;
         // update z(in 1 base),  nGByCP, nCP and mCPByS
         for( int i=0; i<nM; ++i) {
             if (previousZ[i] != z[i]) {
-                nGByCP( _, previousZ[i] - 1) = nGByCP( _, previousZ[i] - 1) - counts( _, i);   // 1-base index to 0-base for slicing
-                nGByCP( _, z[i] - 1 ) = nGByCP( _, z[i] -1 ) + counts( _, i);  
-                nCP[previousZ[i] - 1] -= nByC[i];
-                nCP[z[i] - 1] += nByC[i];
-                mCPByS(previousZ[i] - 1, s[i] - 1) -= 1; 
-                mCPByS(z[i] - 1, s[i] -1) += 1; 
+                pz_i = previousZ[i] -1;  // 1-base index to 0-base for slicing
+                z_i = z[i] -1; 
+                nGByCP( _, pz_i) = nGByCP( _, pz_i) - counts( _, i);   
+                nGByCP( _, z_i) = nGByCP( _, z_i) + counts( _, i);  
+                nCP[pz_i] -= nByC[i];
+                nCP[z_i] += nByC[i];
+                mCPByS(pz_i, s[i] - 1) -= 1;  // s[i] reindex to 0 base for slicing 
+                mCPByS(z_i, s[i] -1) += 1; 
             }
         }
         return probs; 
