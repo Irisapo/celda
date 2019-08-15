@@ -59,7 +59,7 @@
 #' @rawNamespace import(gridExtra, except = c(combine))
 #' @importFrom withr with_seed
 #' @export
-celda_Ccpp <- function(counts,
+celda_C <- function(counts,
     sampleLabel = NULL,
     K,
     alpha = 1,
@@ -79,7 +79,7 @@ celda_Ccpp <- function(counts,
 
     .validateCounts(counts)
     if (is.null(seed)) {
-        res <- .celda_Ccpp(counts,
+        res <- .celda_C(counts,
             sampleLabel,
             K,
             alpha,
@@ -99,7 +99,7 @@ celda_Ccpp <- function(counts,
             reorder = TRUE)
     } else {
         with_seed(seed,
-            res <- .celda_Ccpp(counts,
+            res <- .celda_C(counts,
                 sampleLabel,
                 K,
                 alpha,
@@ -123,7 +123,7 @@ celda_Ccpp <- function(counts,
 }
 
 
-.celda_Ccpp <- function(counts,
+.celda_C <- function(counts,
     sampleLabel = NULL,
     K,
     alpha = 1,
@@ -147,7 +147,7 @@ celda_Ccpp <- function(counts,
         append = FALSE,
         verbose = verbose)
 
-    .logMessages("Starting Celda_Ccpp: Clustering cells.",
+    .logMessages("Starting Celda_C: Clustering cells.",
         logfile = logfile,
         append = TRUE,
         verbose = verbose)
@@ -174,8 +174,8 @@ celda_Ccpp <- function(counts,
     }
 
     algorithmFun <- ifelse(algorithm == "Gibbs",
-        "celdaC_GibbsUpdate",
-        "celdaC_EMUpdate")
+        ".cCCalcGibbsProbZ",
+        ".cCCalcEMProbZ")
     zInitialize <- match.arg(zInitialize)
 
     allChains <- seq(nchains)
@@ -225,11 +225,9 @@ celda_Ccpp <- function(counts,
         nCP <- p$nCP
         nByC <- p$nByC
 
-        #ll <- .cCCalcLL(mCPByS = mCPByS,
-        ll <- celdaC_llh(mCPByS = mCPByS,
+        ll <- .cCCalcLL(mCPByS = mCPByS,
                 nGByCP = nGByCP,
                 s = s,
-                z = z,
                 K = K,
                 nS = nS,
                 nG = nG,
@@ -240,8 +238,7 @@ celda_Ccpp <- function(counts,
         numIterWithoutImprovement <- 0L
         doCellSplit <- TRUE
         while (iter <= maxIter & numIterWithoutImprovement <= stopIter) {
-            #nextZ <- do.call(algorithmFun, list(
-            do.call(algorithmFun, list(
+            nextZ <- do.call(algorithmFun, list(
                 counts = counts,
                 mCPByS = mCPByS,
                 nGByCP = nGByCP,
@@ -255,18 +252,16 @@ celda_Ccpp <- function(counts,
                 alpha = alpha,
                 beta = beta))
 
-            #mCPByS <- nextZ$mCPByS
-            #nGByCP <- nextZ$nGByCP
-            #nCP <- nextZ$nCP
-            #z <- nextZ$z
+            mCPByS <- nextZ$mCPByS
+            nGByCP <- nextZ$nGByCP
+            nCP <- nextZ$nCP
+            z <- nextZ$z
 
             ## Perform split on i-th iteration of no improvement in log
             ## likelihood
-            #tempLl <- .cCCalcLL(mCPByS = mCPByS,
-            tempLl <- celdaC_llh(mCPByS = mCPByS,
+            tempLl <- .cCCalcLL(mCPByS = mCPByS,
                     nGByCP = nGByCP,
                     s = s,
-                    z = z, 
                     K = K,
                     nS = nS,
                     nG = nG,
@@ -298,8 +293,7 @@ celda_Ccpp <- function(counts,
                     nG,
                     alpha,
                     beta,
-                    #zProb = t(nextZ$probs),
-                    zProb = cC_calProb(counts, mCPByS, nGByCP,  nByC,nCP, z, s,  K,  nG,  nM,alpha,  beta), 
+                    zProb = t(nextZ$probs),
                     maxClustersToTry = K,
                     minCell = 3)
 
@@ -324,11 +318,9 @@ celda_Ccpp <- function(counts,
             }
 
             ## Calculate complete likelihood
-            #tempLl <- .cCCalcLL(mCPByS = mCPByS,
-            tempLl <- celdaC_llh(mCPByS = mCPByS,
+            tempLl <- .cCCalcLL(mCPByS = mCPByS,
                     nGByCP = nGByCP,
                     s = s,
-                    z = z, 
                     K = K,
                     nS = nS,
                     nG = nG,
@@ -405,7 +397,7 @@ celda_Ccpp <- function(counts,
         append = TRUE,
         verbose = verbose)
 
-    .logMessages("Completed Celda_Ccpp. Total time:",
+    .logMessages("Completed Celda_C. Total time:",
         format(difftime(endTime, startTime)),
         logfile = logfile,
         append = TRUE,
@@ -830,8 +822,7 @@ logLikelihoodcelda_C <- function(counts, sampleLabel, z, K, alpha, beta) {
     sampleLabel <- .processSampleLabels(sampleLabel, ncol(counts))
     s <- as.integer(sampleLabel)
     p <- .cCDecomposeCounts(counts, s, z, K)
-    #final <- .cCCalcLL(mCPByS = p$mCPByS,
-    final <- celdaC_llh(mCPByS = p$mCPByS,
+    final <- .cCCalcLL(mCPByS = p$mCPByS,
         nGByCP = p$nGByCP,
         s = s,
         z = z,
