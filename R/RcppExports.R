@@ -17,6 +17,10 @@ cC_calProb <- function(counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha
     .Call('_celda_cC_calProb', PACKAGE = 'celda', counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta)
 }
 
+cC_calProbT <- function(counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta) {
+    .Call('_celda_cC_calProbT', PACKAGE = 'celda', counts, mCPByS, nGByCP, nByC, nCP, z, s, K, nG, nM, alpha, beta)
+}
+
 celdaC_llh <- function(mCPByS, nGByCP, s, z, K, nS, nG, alpha, beta) {
     .Call('_celda_celdaC_llh', PACKAGE = 'celda', mCPByS, nGByCP, s, z, K, nS, nG, alpha, beta)
 }
