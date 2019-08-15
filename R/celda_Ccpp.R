@@ -59,7 +59,7 @@
 #' @rawNamespace import(gridExtra, except = c(combine))
 #' @importFrom withr with_seed
 #' @export
-celda_C <- function(counts,
+celda_Ccpp <- function(counts,
     sampleLabel = NULL,
     K,
     alpha = 1,
@@ -79,7 +79,7 @@ celda_C <- function(counts,
 
     .validateCounts(counts)
     if (is.null(seed)) {
-        res <- .celda_C(counts,
+        res <- .celda_Ccpp(counts,
             sampleLabel,
             K,
             alpha,
@@ -99,7 +99,7 @@ celda_C <- function(counts,
             reorder = TRUE)
     } else {
         with_seed(seed,
-            res <- .celda_C(counts,
+            res <- .celda_Ccpp(counts,
                 sampleLabel,
                 K,
                 alpha,
@@ -123,7 +123,7 @@ celda_C <- function(counts,
 }
 
 
-.celda_C <- function(counts,
+.celda_Ccpp <- function(counts,
     sampleLabel = NULL,
     K,
     alpha = 1,
