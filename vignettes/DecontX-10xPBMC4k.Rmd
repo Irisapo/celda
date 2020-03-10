@@ -18,7 +18,7 @@ library(celda)
 
 DecontX can take either `SingleCellExperiment` object from [SingleCellExperiment package] (https://bioconductor.org/packages/release/bioc/html/SingleCellExperiment.html) or a count matrix in the format of rows being genesand columns being cells. When using SingleCellExperiment object, DecontX is using the counts matrix extracted from the SingleCellExperiment object. 
 
-# TODO: Load PBMC4k data from 10X CellRanger output
+** TODO: Load PBMC4k data from 10X CellRanger output
 # Load PBMC4k data from 10X
 ```{r, eval=TRUE, message=FALSE}
 library(TENxPBMCData)  # selected single cell RNAseq datasets from 10X Genomics
@@ -45,11 +45,13 @@ print(pbmc_filterg)
 
 
 # Estimate and remove contaminated counts using DecontX (2 scenarios -- with and without cell types specified)
-## Use DecontX for contamination estimation when there is cell type specified for each individual cells (Here we use celda_CG -- a Bayesian bi-clustering method on single cell RNAseq data -- to get cell clusters as well as gene modules, which enhances cell clustering. You can substitute `celda_CG` with any clustering method you have faith in. DecontX takes the expression count matrix (gene by cell count matrix) and a vector of the same length as number of cells in the count matrix specifying cell cluster. 
+##Use DecontX for contamination estimation when there is cell type specified for each individual cells 
+Here we use celda_CG -- a Bayesian bi-clustering method on single cell RNAseq data -- to get cell clusters as well as gene modules, which enhances cell clustering. You can substitute `celda_CG` with any clustering method you have faith in. DecontX takes the expression count matrix (gene by cell count matrix) and a vector of the same length as number of cells in the count matrix specifying cell cluster. 
 ```{r}
 pbmc_filterg_counts = SummarizedExperiment::assay(pbmc_filterg, "counts")
 pbmc_filterg_counts = as.matrix(pbmc_filterg_counts) # Change obejct type as basic matrix to pass into celda::celda_CG
-celda_res = celda_CG(counts = pbmc_filterg_counts, K = 19, L = 150) # specify number of cell clusters being K=19, number of gnee modules being L=150
+#celda_res = celda_CG(counts = pbmc_filterg_counts, K = 19, L = 150) # specify number of cell clusters being K=19, number of gnee modules being L=150
+celda_res = readRDS("../celda_res_vignettes.rds")
 ```
 P.s: we have analyzed this 4K PBMC data before, so we don't bother with the parameters choice for the bi-clustering method `celda_CG` here. For a detailed toturial of usage on `celda`, it is availabel [here] (celda-vignettes url) 
 
@@ -66,7 +68,7 @@ str(decontx_res)
 ```
 
 
-## Interpretation of DecontX results
+** Interpretation of DecontX results
 There are 4 attributes of DecontX results: 
 (1) runParams: parameters used for estimating contamination
 (2) estimates: parameters, decontaminated counts as well as other intermediate results estimated during contamination estimation
@@ -75,7 +77,7 @@ There are 4 attributes of DecontX results:
 
 
 # Check DecontX decontaminated count to see if gene expressions are cleaner by looking at marker genes' expression
-## First we have to identify cell types, which is one step further from cell clustering, as we do not really know which cluster is corresponding to what cell type and multiple cell clusters can also be from the same cell type. We are looking at the 4 major cell types (T-cell, B-cell, NK-cell and monocytes) in this PBMC data.
+First we have to identify cell types, which is one step further from cell clustering, as we do not really know which cluster is corresponding to what cell type and multiple cell clusters can also be from the same cell type. We are looking at the 4 major cell types (T-cell, B-cell, NK-cell and monocytes) in this PBMC data.
 Combining both the clustering results from `celda_CG`, visualization on a reduced 2-dimention space using Tsne (T-stochastic Neighbor Embedding), and marker genes, we relate cell clusters (more specifically the cells in them) to cell types. The marker genes used to identify these 4 major cell types are CD3D (T-cell marker), MS4A1 and CD79A (B-cell markers), GNLY (NK-cell marker), CD14 or FCGR3A (monocytes markers). There are also other cell types (such as dendritic cells, plasma cells, etc.), we don't include these cell types in our demonstration here and we point you to [here] (celda-vignettes url on PBMC4k data) for cell type analysis using `celda`.
 ```{r}
 celdaTsne.ori = celdaTsne( counts = pbmc_filterg_counts , celdaMod = celda_res ) 
@@ -144,7 +146,20 @@ pltMarker.ori = decontXMarkerPlot( counts = pbmc_filterg_counts_rename, z = cell
 print(pltMarker.ori)
 ```
 
-There are 89% of 
+There are 89% of B-expressing at least one of the monocyte-markers, and 21% of them are expressiong at least one of the T-cell markers, and 15% NK-cell markers. Similiar to B-cells, other 3 major cell types are all expressing a nonnegligible amount of marker genes in other cell types, which indicates cross-contamination in single cell RNAseq data. Now we need to look at decontaminated counts. 
+P.s: DecontX uses Bayesian methods and results into non-integer values in the decontaminated counts. Rounding them into integers for further analysis won't introduce lots of bias, and we do so here.
+```{r}
+pbmc_decontx = decontXcounts(decontx_res_sce) # to get decontaminted counts from sce object
+print(pbmc_decontx) 
+
+pbmc_decontx = as.matrix(pbmc_decontx)  # change object type to be regular matrix
+pbmc_decontx = round(pbmc_decontx) # round into integers
+
+pbmc_decontx_rename = pbmc_decontx
+rownames(pbmc_decontx_rename) = paste(rownames(pbmc_decontx), rowData(decontx_res_sce)[, "Symbol"], sep = "_") 
+pltMarker.decon = decontXMarkerPlot(counts = pbmc_decontx_rename, z = cell_type, geneMarkers = ct_markergenes)
+print(pltMarker.decon)
+```
 
 
 
