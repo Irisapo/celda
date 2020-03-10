@@ -140,13 +140,16 @@ print(head(ct_markergenes_wID))
 ct_markergenes = ct_markergenes_wID[, c("celltype", "feature")]
 colnames(ct_markergenes) = c("cellType", "geneMarkers")
 
-pltMarker = decontXMarkerPlot( counts = pbmc_filterg_counts_rename, z = cell_type, geneMarkers = ct_markergenes) 
-
-
+pltMarker.ori = decontXMarkerPlot( counts = pbmc_filterg_counts_rename, z = cell_type, geneMarkers = ct_markergenes) 
+print(pltMarker.ori)
 ```
 
+There are 89% of 
 
-## Use DecontX for contamination estimation when there is no cell type specified for the cells
+
+
+##
+Use DecontX for contamination estimation when there is no cell type specified for the cells
 
 
 
