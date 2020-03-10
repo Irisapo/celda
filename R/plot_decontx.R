@@ -20,12 +20,12 @@ decontXMarkerPlot <- function(counts, z, geneMarkers, threshold = 1, color = "re
 
   pct_CTbyZ.melt <- reshape2::melt(pct_CTbyZ, varnames = c("cellType", "z"), value.name = "percent")
 
-  plt <- ggplot2::ggplot(pct_CTbyZ.melt, ggplot2::aes(x = z, y = pct_CTbyZ.melt$percent * 100)) +
+  plt <- ggplot2::ggplot(pct_CTbyZ.melt, ggplot2::aes(x = cellType, y = pct_CTbyZ.melt$percent * 100)) +
     ggplot2::geom_bar(stat = "identity", fill = color) +
-    ggplot2::geom_text(aes(x = z, y = pct_CTbyZ.melt$percent * 100 + 5, label = paste0(round(pct_CTbyZ.melt$percent, precision) * 100, "%")), size = textLabelSize) +
-    ggplot2::xlab("Cluster") +
+    ggplot2::geom_text(aes(x = cellType, y = pct_CTbyZ.melt$percent * 100 + 5, label = paste0(round(pct_CTbyZ.melt$percent, precision) * 100, "%")), size = textLabelSize) +
+    ggplot2::xlab("Gene markers") +
     ggplot2::ylab("Percentage of cells expressing cell-type\nspecific markers") +
-    ggplot2::facet_grid(. ~ cellType) +
+    ggplot2::facet_wrap( ~ z) +
     ggplot2::theme(
       panel.background = ggplot2::element_rect(fill = "white", color = "grey"),
       panel.grid = ggplot2::element_line("grey"), legend.position = "none",
