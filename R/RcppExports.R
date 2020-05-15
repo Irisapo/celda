@@ -41,6 +41,22 @@ cG_CalcGibbsProbY <- function(index, counts, nTSbyC, nbyTS, nGbyTS, nbyG, y, L, 
     .Call('_celda_cG_CalcGibbsProbY', PACKAGE = 'celda', index, counts, nTSbyC, nbyTS, nGbyTS, nbyG, y, L, nG, lg_beta, lg_gamma, lg_delta, delta)
 }
 
+countwFixedL <- function(labelVec, Length) {
+    .Call('_celda_countwFixedL', PACKAGE = 'celda', labelVec, Length)
+}
+
+countNFixedCol <- function(M, labelVec, nG, nCol, RnCol) {
+    .Call('_celda_countNFixedCol', PACKAGE = 'celda', M, labelVec, nG, nCol, RnCol)
+}
+
+reverseCumSum <- function(v) {
+    .Call('_celda_reverseCumSum', PACKAGE = 'celda', v)
+}
+
+SBP2Prop <- function(a, b, alpha) {
+    .Call('_celda_SBP2Prop', PACKAGE = 'celda', a, b, alpha)
+}
+
 #' Fast matrix multiplication for double x int
 #' 
 #' @param A a double matrix
