@@ -108,17 +108,22 @@ iterationDP = function(counts = sim$counts, iter.updates, alpha=2, eta=1,K=20) {
 celdaC_dp = function(counts, SampleLabel, alpha =2, eta=1, K=20, seed=12345, iter = 30, stopIteri = 3){
     iter.updates = Initialization(counts = counts, SampleLabel = SampleLabel, K=K, seed=seed) 
 
-		temp_z  = iter.updates$k.byC
+		temp_z = iter.updates$k.byC
+    temp_K = length(unique(temp_z))
 		numIterWithoutImprovement = 0
 
     for (i in 1:iter) { 
         cat(format(Sys.time(),"%a %b %d %X %Y"), " running iteration: ",  i, "\n") 
         iter.updates = iterationDP(counts = counts, iter.updates=iter.updates, K=K, alpha=alpha, eta=eta) 
 
-				if (all.equal(temp_z, iter.updates$k.byC) == TRUE) {
+				#if (all.equal(temp_z, iter.updates$k.byC) == TRUE) {
+        ## labels could shuffle after being updated
+        match_tb = table(temp_z, iter.updates$k.byC)
+        if (length(which(match_tb>0)) == temp_K) {
 					numIterWithoutImprovement = numIterWithoutImprovement + 1
 				} else {
 					temp_z = iter.updates$k.byC
+          temp_K = length(unique(temp_z))
 					numIterWithoutImprovement = 0
 				}
 
