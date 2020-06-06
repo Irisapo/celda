@@ -36,18 +36,19 @@ Initialization = function(counts=sim$counts, SampleLabel=sim$sampleLabel, K =20,
     k.byC = sample(x=K, size=nC, replace=TRUE)
     #
     nC.KbyS = sapply(1:Sample, FUN=function(s) {
-			     nC.sampleS = countwFixedL(labelVec=k.byC[s.int==s], Length=K) 
-			     names(nC.sampleS) = as.character(1:K) 
-			     #nC.sampleS = nC.sampleS[order(nC.sampleS, decreasing=TRUE)]
-			     return(nC.sampleS)
-				 }, simplify=FALSE) 
+        nC.sampleS = countwFixedL(labelVec=k.byC[s.int==s], Length=K) 
+        names(nC.sampleS) = as.character(1:K) 
+        #nC.sampleS = nC.sampleS[order(nC.sampleS, decreasing=TRUE)]
+        return(nC.sampleS)
+				}, simplify=FALSE) 
     #
     N.GbyK = countNFixedCol(M=counts, labelVec=k.byC, nG=nG, nCol=nC, RnCol=K) 
     # 
+    N.byC = colSums(counts)
     #nC.byK = countwFixedL(labelVec=k.byC, Length=K) 
 
 
-    iter.updates = list("k.byC"=k.byC, 'nC.KbyS'=nC.KbyS,'N.GbyK'=N.GbyK, 's.int'=s.int) 
+    iter.updates = list("k.byC"=k.byC, 'nC.KbyS'=nC.KbyS,'N.GbyK'=N.GbyK, 's.int'=s.int, 'N.byC'=N.byC, "Sample"=Sample) 
 
 
     return(iter.updates)
@@ -72,7 +73,7 @@ iterationDP = function(counts = sim$counts, iter.updates, alpha=2, eta=1,K=20) {
     #Calculate log-probability (posterior-Dir term) of the current cell in each topic/cluster 
     Nplus.GbyK = N.GbyK + N.byG.Cindex
     logp.multi = colSums(lgamma(Nplus.GbyK + eta)) - lgamma(colSums(Nplus.GbyK) + nG*eta) + 
-	   lgamma(colSums(N.GbyK) + nG*eta) - colSums(lgamma(N.GbyK + eta))  
+	    lgamma(colSums(N.GbyK) + nG*eta) - colSums(lgamma(N.GbyK + eta))  
     names(logp.multi) = as.character(1:K) 
 
 
@@ -136,3 +137,67 @@ celdaC_dp = function(counts, SampleLabel, alpha =2, eta=1, K=20, seed=12345, ite
     return(list("resList" = iter.updates, "params" = list("alpha"=alpha, "eta"=eta, "K"=K, "iter"=iter))) 
 }
 
+
+
+## EM updates
+emDP = function(counts = sim$counts, iter.updates, alpha=2, eta=1,K=20) {
+
+    nC = ncol(counts) 
+    nG = nrow(counts) 
+    Sample = iter.updates$Sample
+    dirConcentration = eta * nG
+
+    #if (! "k.KbyC" %in% names(iter.updates)) {
+    #  iter.updates[["k.KbyC"]] <- Matrix::sparseMatrix(i=iter.updates$k.byC, j=seq_len(nC), x=1)
+    #  iter.updates[["k.KbyC"]] <- as.matrix(iter.updates[["k.KbyC"]])  # to dense matrix
+    #}
+
+    # Update all cells
+    N.GbyK = iter.updates$N.GbyK
+    eta_weight.GbyK = dirConcentration * sweep(N.GbyK + eta, MARGIN=2, STATS=colSums(N.GbyK) + nG*eta, FUN="/") # Or can use fit_dir to estimate concentration param
+
+    # Calculate log-probability (posterior-Dir term) of the current cell in each topic/cluster 
+    #denominator.byK = lgamma(colSums(eta_weight.GbyK)) - colSums(lgamma(eta_weight.GbyK)) 
+    denominator.byK = 0 - colSums(.lgamma(eta_weight.GbyK)) 
+    #numerator.KbyC = apply(counts, 2, FUN=function(vec_col) {lgamma(colSums(vec_col + eta_weight.GbyK)) - colSums(lgamma(vec_col + eta_weight.GbyK))})
+    numerator.KbyC = 0 - apply(counts, 2, FUN=function(vec_col) {colSums(lgamma(vec_col + eta_weight.GbyK))})        
+    logp_multi.KbyC = numerator.KbyC - denominator.byK
+
+    # Update new cluster label 
+    new.k.KbyC = matrix(NA, nrow=K, ncol=nC)
+    nC.KbyS = iter.updates$nC.KbyS
+    for (s in seq_len(length(nC.KbyS))) {
+      nC.byK.s = nC.KbyS[[s]]
+      freq_index.s = order(nC.byK.s, decreasing=TRUE)
+      nC.byT.s = nC.byK.s[ freq_index.s ]  # Reorder on frequency
+
+      # Calculate log-probabiliry of the topic/cluster proportion (stick-breaking process) 
+      b_SBP.s = reverseCumSum(nC.byT.s)
+      logp_pi.s = SBP2Prop(a=nC.byT.s, b=b_SBP.s,alpha=alpha) 
+      logp_pi.s = logp_pi.s[ order(freq_index.s) ]  # Change back to original order
+
+      # Update
+      new.k.KbyC[, iter.updates$s.int == s] = logp_multi.KbyC[, iter.updates$s.int == s] + logp_pi.s
+    }
+
+    # Hard EM
+    new.k.byC = apply(new.k.KbyC, 2, .sampleLl)
+    new.N.GbyK = countNFixedCol(M=counts, labelVec=new.k.byC, nG=nG, nCol=nC, RnCol=K) 
+    new.nC.KbyS = sapply(1:Sample, FUN=function(s) {
+        nC.sampleS = countwFixedL(labelVec=new.k.byC[iter.updates$s.int==s], Length=K) 
+        names(nC.sampleS) = as.character(1:K) 
+        return(nC.sampleS)
+				}, simplify=FALSE) 
+
+    iter.updates$k.byC = new.k.byC
+    iter.updates$nC.KbyS = new.nC.KbyS
+    iter.updates$N.GbyK = new.N.GbyK
+    return(iter.updates) 
+
+}
+
+.lgamma = function(v) {
+  lgamma_v = base::lgamma(v)
+  lgamma_v[which(lgamma_v == Inf)] = 0
+  return(lgamma_v)
+}
