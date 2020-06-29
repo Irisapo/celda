@@ -145,7 +145,8 @@ emDP = function(counts = sim$counts, iter.updates, alpha=2, eta=1,K=20) {
     nC = ncol(counts) 
     nG = nrow(counts) 
     Sample = iter.updates$Sample
-    dirConcentration = eta * nG
+    #dirConcentration = eta * nG
+    dirConcentration = 1 # Normalize as to proportion
 
     #if (! "k.KbyC" %in% names(iter.updates)) {
     #  iter.updates[["k.KbyC"]] <- Matrix::sparseMatrix(i=iter.updates$k.byC, j=seq_len(nC), x=1)
@@ -155,6 +156,7 @@ emDP = function(counts = sim$counts, iter.updates, alpha=2, eta=1,K=20) {
     # Update all cells
     N.GbyK = iter.updates$N.GbyK
     eta_weight.GbyK = dirConcentration * sweep(N.GbyK + eta, MARGIN=2, STATS=colSums(N.GbyK) + nG*eta, FUN="/") # Or can use fit_dir to estimate concentration param
+    #eta_weight.GbyK = N.GbyK + eta
 
     # Calculate log-probability (posterior-Dir term) of the current cell in each topic/cluster 
     #denominator.byK = lgamma(colSums(eta_weight.GbyK)) - colSums(lgamma(eta_weight.GbyK)) 
@@ -201,3 +203,129 @@ emDP = function(counts = sim$counts, iter.updates, alpha=2, eta=1,K=20) {
   lgamma_v[which(lgamma_v == Inf)] = 0
   return(lgamma_v)
 }
+
+
+## EM updates (transcript as indivisual, but normalized by cell's total UMIs) 
+emDP_heuristic = function(counts = sim$counts, iter.updates, alpha=2, eta=1,K=20) {
+
+    nC = ncol(counts) 
+    nG = nrow(counts) 
+    Sample = iter.updates$Sample
+    #dirConcentration = eta * nG
+    dirConcentration = 1 # Normalize as to proportion
+
+    #if (! "k.KbyC" %in% names(iter.updates)) {
+    #  iter.updates[["k.KbyC"]] <- Matrix::sparseMatrix(i=iter.updates$k.byC, j=seq_len(nC), x=1)
+    #  iter.updates[["k.KbyC"]] <- as.matrix(iter.updates[["k.KbyC"]])  # to dense matrix
+    #}
+
+    # Update all cells
+    N.GbyK = iter.updates$N.GbyK
+    eta_weight.GbyK = dirConcentration * sweep(N.GbyK + eta, MARGIN=2, STATS=colSums(N.GbyK) + nG*eta, FUN="/") # Or can use fit_dir to estimate concentration param
+    #eta_weight.GbyK = N.GbyK + eta
+
+    # Calculate log-probability (posterior-Dir term) of the current cell in each topic/cluster 
+    #denominator.byK = 0 - colSums(.lgamma(eta_weight.GbyK)) 
+    #numerator.KbyC = 0 - apply(counts, 2, FUN=function(vec_col) {colSums(lgamma(vec_col + eta_weight.GbyK))})        
+    #logp_multi.KbyC = numerator.KbyC - denominator.byK
+		if (storage.mode(counts) != 'integer') {
+			storage.mode(counts) <- 'integer'
+		}
+    logp_multi.KbyC = eigenMatMultInt(eta_weight.GbyK, counts) 
+
+    # Update new cluster label 
+    new.k.KbyC = matrix(NA, nrow=K, ncol=nC)
+    nC.KbyS = iter.updates$nC.KbyS
+    for (s in seq_len(length(nC.KbyS))) {
+      nC.byK.s = nC.KbyS[[s]]
+      freq_index.s = order(nC.byK.s, decreasing=TRUE)
+      nC.byT.s = nC.byK.s[ freq_index.s ]  # Reorder on frequency
+
+      # Calculate log-probabiliry of the topic/cluster proportion (stick-breaking process) 
+      b_SBP.s = reverseCumSum(nC.byT.s)
+      logp_pi.s = SBP2Prop(a=nC.byT.s, b=b_SBP.s,alpha=alpha) 
+      logp_pi.s = logp_pi.s[ order(freq_index.s) ]  # Change back to original order
+
+      # Update
+      new.k.KbyC[, iter.updates$s.int == s] = logp_multi.KbyC[, iter.updates$s.int == s] + logp_pi.s
+    }
+
+    # Hard EM
+    new.k.byC = apply(new.k.KbyC, 2, .sampleLl)
+    new.N.GbyK = countNFixedCol(M=counts, labelVec=new.k.byC, nG=nG, nCol=nC, RnCol=K) 
+    new.nC.KbyS = sapply(1:Sample, FUN=function(s) {
+        nC.sampleS = countwFixedL(labelVec=new.k.byC[iter.updates$s.int==s], Length=K) 
+        names(nC.sampleS) = as.character(1:K) 
+        return(nC.sampleS)
+				}, simplify=FALSE) 
+
+    iter.updates$k.byC = new.k.byC
+    iter.updates$nC.KbyS = new.nC.KbyS
+    iter.updates$N.GbyK = new.N.GbyK
+    return(iter.updates) 
+
+}
+
+
+## EM updates w/ fixed Dir updates
+emDP_fixDir = function(counts = sim$counts, iter.updates, alpha=2, eta=1,K=20) {
+
+    nC = ncol(counts) 
+    nG = nrow(counts) 
+    Sample = iter.updates$Sample
+    #dirConcentration = eta * nG
+    dirConcentration = 1 # Normalize as to proportion
+
+    #if (! "k.KbyC" %in% names(iter.updates)) {
+    #  iter.updates[["k.KbyC"]] <- Matrix::sparseMatrix(i=iter.updates$k.byC, j=seq_len(nC), x=1)
+    #  iter.updates[["k.KbyC"]] <- as.matrix(iter.updates[["k.KbyC"]])  # to dense matrix
+    #}
+
+    # Update all cells
+    #N.GbyK = iter.updates$N.GbyK
+    #eta_weight.GbyK = dirConcentration * sweep(N.GbyK + eta, MARGIN=2, STATS=colSums(N.GbyK) + nG*eta, FUN="/") # Or can use fit_dir to estimate concentration param
+    eta_weight.GbyK <- sapply(1:K, FUN=function(ck) {MCMCprecision::fit_dirichlet(t(counts[ , iter.updates[["k.byC"]] == ck]))$alpha},
+		  simplify=TRUE)
+		eta_weight.GbyK[is.na(eta_weight.GbyK)] <- eta
+
+    # Calculate log-probability (posterior-Dir term) of the current cell in each topic/cluster 
+    #denominator.byK = lgamma(colSums(eta_weight.GbyK)) - colSums(lgamma(eta_weight.GbyK)) 
+    denominator.byK = 0 - colSums(.lgamma(eta_weight.GbyK)) 
+    #numerator.KbyC = apply(counts, 2, FUN=function(vec_col) {lgamma(colSums(vec_col + eta_weight.GbyK)) - colSums(lgamma(vec_col + eta_weight.GbyK))})
+    numerator.KbyC = 0 - apply(counts, 2, FUN=function(vec_col) {colSums(lgamma(vec_col + eta_weight.GbyK))})        
+    logp_multi.KbyC = numerator.KbyC - denominator.byK
+
+    # Update new cluster label 
+    new.k.KbyC = matrix(NA, nrow=K, ncol=nC)
+    nC.KbyS = iter.updates$nC.KbyS
+    for (s in seq_len(length(nC.KbyS))) {
+      nC.byK.s = nC.KbyS[[s]]
+      freq_index.s = order(nC.byK.s, decreasing=TRUE)
+      nC.byT.s = nC.byK.s[ freq_index.s ]  # Reorder on frequency
+
+      # Calculate log-probabiliry of the topic/cluster proportion (stick-breaking process) 
+      b_SBP.s = reverseCumSum(nC.byT.s)
+      logp_pi.s = SBP2Prop(a=nC.byT.s, b=b_SBP.s,alpha=alpha) 
+      logp_pi.s = logp_pi.s[ order(freq_index.s) ]  # Change back to original order
+
+      # Update
+      new.k.KbyC[, iter.updates$s.int == s] = logp_multi.KbyC[, iter.updates$s.int == s] + logp_pi.s
+    }
+
+    # Hard EM
+    new.k.byC = apply(new.k.KbyC, 2, .sampleLl)
+    new.N.GbyK = countNFixedCol(M=counts, labelVec=new.k.byC, nG=nG, nCol=nC, RnCol=K) 
+    new.nC.KbyS = sapply(1:Sample, FUN=function(s) {
+        nC.sampleS = countwFixedL(labelVec=new.k.byC[iter.updates$s.int==s], Length=K) 
+        names(nC.sampleS) = as.character(1:K) 
+        return(nC.sampleS)
+				}, simplify=FALSE) 
+
+    iter.updates$k.byC = new.k.byC
+    iter.updates$nC.KbyS = new.nC.KbyS
+    iter.updates$N.GbyK = new.N.GbyK
+    return(iter.updates) 
+
+}
+
+
